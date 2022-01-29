@@ -7,8 +7,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.util.Scanner;
-
 @SpringBootApplication
 public class ImportFilesToDatabaseApplication
         implements CommandLineRunner {
@@ -32,12 +30,12 @@ public class ImportFilesToDatabaseApplication
     public void run(String... args) {
         LOG.info("EXECUTING : command line runner");
 
-        System.out.print("Enter full path to your filesystem to be imported: ");
-        Scanner myObj = new Scanner(System.in);
-        String path = myObj.nextLine();
-        LOG.info(path);
+//        System.out.print("Enter full path to your filesystem to be imported: ");
+//        Scanner myObj = new Scanner(System.in);
+//        String path = myObj.nextLine();
+//        LOG.info(path);
 
-        companyService.saveCompany("1321354", "Lost People", "U Mrtvých 772");
+        companyService.readFile();
         }
     }
 
