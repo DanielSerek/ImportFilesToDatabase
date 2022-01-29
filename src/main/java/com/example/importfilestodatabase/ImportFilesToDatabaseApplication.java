@@ -27,15 +27,11 @@ public class ImportFilesToDatabaseApplication
     }
 
     @Override
-    public void run(String... args) {
+    public void run(String... args) throws Exception{
         LOG.info("EXECUTING : command line runner");
-
-//        System.out.print("Enter full path to your filesystem to be imported: ");
-//        Scanner myObj = new Scanner(System.in);
-//        String path = myObj.nextLine();
-//        LOG.info(path);
-
-        companyService.readFile();
+        companyService.readDir();
+        companyService.readFiles();
+        companyService.showStatistics();
         }
     }
 
