@@ -13,24 +13,52 @@ public class Company {
     private String ico;
     private String compName;
     private String address;
-    @Column(unique = true)
-    private String email;
-    private String firtName;
-    private String surName;
+    @OneToOne(cascade = CascadeType.MERGE)
+    @JoinColumn(name="employee_id", referencedColumnName = "id")
+    private Employee employee;
     @Temporal(TemporalType.TIMESTAMP)
     private Date timeStamp;
 
     public Company() {
     }
 
-    public Company(String ico, String compName, String address, String email, String firstName, String surName) {
+    public Company(String ico, String compName, String address) {
         this.ico = ico;
         this.compName = compName;
         this.address = address;
-        this.email = email;
-        this.firtName = firstName;
-        this.surName = surName;
         this.timeStamp = new Date();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getIco() {
+        return ico;
+    }
+
+    public void setIco(String ico) {
+        this.ico = ico;
+    }
+
+    public String getCompName() {
+        return compName;
+    }
+
+    public void setCompName(String compName) {
+        this.compName = compName;
+    }
+
+    public Employee getEmployee() {
+        return employee;
+    }
+
+    public void setEmployee(Employee employee) {
+        this.employee = employee;
     }
 
     public String getico() {
@@ -55,30 +83,6 @@ public class Company {
 
     public void setAddress(String address) {
         this.address = address;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getFirtName() {
-        return firtName;
-    }
-
-    public void setFirtName(String firtName) {
-        this.firtName = firtName;
-    }
-
-    public String getSurName() {
-        return surName;
-    }
-
-    public void setSurName(String surName) {
-        this.surName = surName;
     }
 
     public Date getTimeStamp() {
