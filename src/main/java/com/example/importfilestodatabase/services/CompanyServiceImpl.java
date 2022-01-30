@@ -20,10 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 
 @Service
 public class CompanyServiceImpl implements CompanyService {
@@ -111,12 +108,19 @@ public class CompanyServiceImpl implements CompanyService {
     public void compareAndSaveData(Company newCompany, Employee newEmployee) throws IOException {
         for (Company existingCompany : getAllCompanies()) {
             if(isICOSame(existingCompany, newCompany)){
-                existingCompany.setAddress(newCompany.getAddress());
-                existingCompany.setCompName(newCompany.getCompName());
-                existingCompany.setEmployee(newEmployee);
-                existingCompany.setTimeStamp(new Date());
+                Company company = this.companyRepository.findById(existingCompany.getId()).get();
+                company.setId(company.getId());
+                company.setAddress(newCompany.getAddress());
+                company.setCompName(newCompany.getCompName());
+                company.setEmployee(newEmployee);
+                company.setTimeStamp(new Date());
                 try{
-                    this.companyRepository.save(existingCompany);
+                    for (Employee employee : this.employeeRepository.findAll()) {
+                        if(employee.getCompany().getId()==company.getId()){
+                            company.setEmployee(employee);
+                        }
+                    }
+                    this.companyRepository.save(company);
                     stats.put(Status.UPDATED, stats.get(Status.UPDATED) + 1);
                     return;
                 }
@@ -155,13 +159,13 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public ArrayList<Company> getAllCompanies(){
-        return (ArrayList<Company>) this.companyRepository.findAll();
+    public List<Company> getAllCompanies(){
+        return this.companyRepository.findAll();
     }
 
     @Override
-    public ArrayList<Employee> getAllEmployees(){
-        return (ArrayList<Employee>) this.employeeRepository.findAll();
+    public List<Employee> getAllEmployees(){
+        return this.employeeRepository.findAll();
     }
 
     private void removeEmployeesWithoutCompany() {
@@ -178,7 +182,7 @@ public class CompanyServiceImpl implements CompanyService {
             Path movedFile = Paths.get(path + file.getName());
             Path originalPath = file.toPath();
             Files.copy(originalPath, movedFile, StandardCopyOption.REPLACE_EXISTING);
-            //file.delete();
+            //file.delete(); //Kept for testing purposes
             LOG.info("The file " + file.getName() + " was saved here.");
         }
         catch(Exception e){

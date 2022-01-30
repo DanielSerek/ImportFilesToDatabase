@@ -4,7 +4,6 @@ import com.example.importfilestodatabase.models.Company;
 import com.example.importfilestodatabase.models.Employee;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public interface CompanyService {
@@ -19,5 +18,5 @@ public interface CompanyService {
 
     public List<Company> getAllCompanies();
 
-    public ArrayList<Employee> getAllEmployees();
+    public List<Employee> getAllEmployees();
 }

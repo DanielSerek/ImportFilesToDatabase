@@ -13,7 +13,7 @@ public class Company {
     private String ico;
     private String compName;
     private String address;
-    @OneToOne(cascade = CascadeType.MERGE)
+    @OneToOne
     @JoinColumn(name="employee_id", referencedColumnName = "id")
     private Employee employee;
     @Temporal(TemporalType.TIMESTAMP)

@@ -7,14 +7,15 @@ import java.util.Date;
 @Table(name="employees")
 public class Employee {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(unique = true)
     private String email;
     private String firstName;
     private String surName;
 
-    @OneToOne(mappedBy="employee")
+    @OneToOne(mappedBy="employee", cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY)
     private Company company;
 
     @Temporal(TemporalType.TIMESTAMP)
