@@ -41,8 +41,6 @@ public class CompanyServiceImpl implements CompanyService {
         this.employeeRepository = employeeRepository;
     }
 
-
-
     @Override
     public void saveCompany(String ico, String compName, String address) {
         Company company = new Company(ico, compName, address);
@@ -75,7 +73,6 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public void readFiles() throws IOException {
-
         for (File file : listOfFiles) {
             if (file.isFile()) {
                 try {
@@ -94,11 +91,11 @@ public class CompanyServiceImpl implements CompanyService {
                             employee.setFirstName(input[5]);
                             employee.setSurName(input[6]);
                             employee.setTimeStamp(new Date());
+                            compareAndSaveData(company, employee);
                         } catch (IndexOutOfBoundsException e) {
                             LOG.info("The record is not in a required format.");
                             stats.put(Status.ERROR, stats.get(Status.ERROR) + 1);
                         }
-                        saveData(employee,company);
                     }
                     LOG.info("The file " + file.getName() + " has been processed.");
                     scanner.close();
@@ -111,16 +108,62 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Transactional
-    public void saveData(Employee employee, Company company){
-        try {
-            this.employeeRepository.save(employee);
-            company.setEmployee(employee);
-            this.companyRepository.save(company);
+    public void compareAndSaveData(Company newCompany, Employee newEmployee) throws IOException {
+        for (Company existingCompany : getAllCompanies()) {
+            if(isICOsame(existingCompany, newCompany)){
+                existingCompany.setAddress(newCompany.getAddress());
+                existingCompany.setCompName(newCompany.getCompName());
+                existingCompany.setEmployee(newEmployee);
+                existingCompany.setTimeStamp(new Date());
+                try{
+                    this.companyRepository.save(existingCompany);
+                    stats.put(Status.UPDATED, stats.get(Status.UPDATED) + 1);
+                    return;
+                }
+                catch (DataIntegrityViolationException e) {
+                    LOG.info("A duplicate record was identified. ");
+                    stats.put(Status.DUPLICATE, stats.get(Status.DUPLICATE) + 1);
+                }
+                catch(Exception e){
+                    LOG.info("Error. It wasn't possible to save the record in the database.");
+                    stats.put(Status.ERROR, stats.get(Status.ERROR) + 1);
+                }
+            }
+        }
+        try{
+            this.employeeRepository.save(newEmployee);
+            newCompany.setEmployee(newEmployee);
+            this.companyRepository.save(newCompany);
             stats.put(Status.PROCESSED, stats.get(Status.PROCESSED) + 1);
-        } catch (DataIntegrityViolationException e) {
+            return;
+        }
+        catch (DataIntegrityViolationException e) {
             LOG.info("A duplicate record was identified. ");
             stats.put(Status.DUPLICATE, stats.get(Status.DUPLICATE) + 1);
         }
+        catch(Exception e){
+            LOG.info("Error. It wasn't possible to save the record in the database.");
+            stats.put(Status.ERROR, stats.get(Status.ERROR) + 1);
+        }
+    }
+
+    private boolean isICOsame(Company firstCompany, Company secondCompany){
+        String input1 = firstCompany.getIco().replaceAll("[\uFEFF-\uFFFF]", "");
+        String input2 = secondCompany.getIco().replaceAll("[\uFEFF-\uFFFF]", "");
+        for (int i = 0; i < 8; i++) {
+            if(input1.charAt(i)!=input2.charAt(i)) return false;
+        }
+        return true;
+    }
+
+    @Override
+    public ArrayList<Company> getAllCompanies(){
+        return (ArrayList<Company>) this.companyRepository.findAll();
+    }
+
+    @Override
+    public ArrayList<Employee> getAllEmployees(){
+        return (ArrayList<Employee>) this.employeeRepository.findAll();
     }
 
     private void moveProcessedFile(File file){
@@ -142,6 +185,7 @@ public class CompanyServiceImpl implements CompanyService {
         LOG.info("The statistics of data transfer");
         LOG.info("The number of processed files: " + stats.get(Status.FOUND));
         LOG.info("The number of processed records: " + stats.get(Status.PROCESSED));
+        LOG.info("The number of updated records: " + stats.get(Status.UPDATED));
         LOG.info("The number of duplicate records: " + stats.get(Status.DUPLICATE));
         LOG.info("The number of errors in the records: " + stats.get(Status.ERROR));
     }
