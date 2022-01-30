@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import javax.transaction.Transactional;
 import java.io.File;
@@ -63,7 +64,7 @@ public class CompanyServiceImpl implements CompanyService {
 
         // Add only .csv files into the list of files
         for (File file : readFiles) {
-            if (file.getName().endsWith(".csv")) {
+            if (file.isFile() && file.getName().endsWith(".csv")) {
                 listOfFiles.add(file);
                 stats.put(Status.FOUND, stats.get(Status.FOUND) + 1);
             }
@@ -74,43 +75,42 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     public void readFiles() throws IOException {
         for (File file : listOfFiles) {
-            if (file.isFile()) {
-                try {
-                    LOG.info("Reading file: " + file.getName());
-                    Scanner scanner = new Scanner(file, "UTF-8");
-                    while (scanner.hasNext()) {
-                        String[] input = scanner.nextLine().split(",");
-                        Company company = new Company();
-                        Employee employee = new Employee();
-                        try {
-                            company.setico(input[0]);
-                            company.setcompName(input[1]);
-                            company.setAddress(input[2] + ", " + input[3]);
-                            company.setTimeStamp(new Date());
-                            employee.setEmail(input[4]);
-                            employee.setFirstName(input[5]);
-                            employee.setSurName(input[6]);
-                            employee.setTimeStamp(new Date());
-                            compareAndSaveData(company, employee);
-                        } catch (IndexOutOfBoundsException e) {
-                            LOG.info("The record is not in a required format.");
-                            stats.put(Status.ERROR, stats.get(Status.ERROR) + 1);
-                        }
+            try {
+                LOG.info("Reading file: " + file.getName());
+                Scanner scanner = new Scanner(file, "UTF-8");
+                while (scanner.hasNext()) {
+                    String[] input = scanner.nextLine().split(",");
+                    Company company = new Company();
+                    Employee employee = new Employee();
+                    try {
+                        company.setico(input[0].replaceAll("[\uFEFF-\uFFFF]",""));
+                        company.setcompName(input[1]);
+                        company.setAddress(input[2] + ", " + input[3]);
+                        company.setTimeStamp(new Date());
+                        employee.setEmail(input[4]);
+                        employee.setFirstName(input[5]);
+                        employee.setSurName(input[6]);
+                        employee.setTimeStamp(new Date());
+                        compareAndSaveData(company, employee);
+                    } catch (IndexOutOfBoundsException e) {
+                        LOG.info("The record is not in a required format.");
+                        stats.put(Status.ERROR, stats.get(Status.ERROR) + 1);
                     }
-                    LOG.info("The file " + file.getName() + " has been processed.");
-                    scanner.close();
-                } catch (Exception e) {
-                    System.out.println("!!! Exception encountered: " + e.getMessage());
                 }
-                moveProcessedFile(file);
+                LOG.info("The file " + file.getName() + " has been processed.");
+                scanner.close();
+            } catch (Exception e) {
+                System.out.println("!!! Exception encountered: " + e.getMessage());
             }
+            removeEmployeesWithoutCompany();
+            moveProcessedFile(file);
         }
     }
 
     @Transactional
     public void compareAndSaveData(Company newCompany, Employee newEmployee) throws IOException {
         for (Company existingCompany : getAllCompanies()) {
-            if(isICOsame(existingCompany, newCompany)){
+            if(isICOSame(existingCompany, newCompany)){
                 existingCompany.setAddress(newCompany.getAddress());
                 existingCompany.setCompName(newCompany.getCompName());
                 existingCompany.setEmployee(newEmployee);
@@ -147,13 +147,11 @@ public class CompanyServiceImpl implements CompanyService {
         }
     }
 
-    private boolean isICOsame(Company firstCompany, Company secondCompany){
-        String input1 = firstCompany.getIco().replaceAll("[\uFEFF-\uFFFF]", "");
-        String input2 = secondCompany.getIco().replaceAll("[\uFEFF-\uFFFF]", "");
-        for (int i = 0; i < 8; i++) {
-            if(input1.charAt(i)!=input2.charAt(i)) return false;
-        }
-        return true;
+    private boolean isICOSame(Company existingCompany, Company newCompany){
+        String input1 = existingCompany.getIco().replaceAll("[\uFEFF-\uFFFF]", "");
+        String input2 = newCompany.getIco().replaceAll("[\uFEFF-\uFFFF]", "");
+        if(input1.equals(input2)) return true;
+        return false;
     }
 
     @Override
@@ -166,6 +164,14 @@ public class CompanyServiceImpl implements CompanyService {
         return (ArrayList<Employee>) this.employeeRepository.findAll();
     }
 
+    private void removeEmployeesWithoutCompany() {
+        for (Employee employee : this.employeeRepository.findAll()) {
+            if(ObjectUtils.isEmpty(employee.getCompany())){
+                this.employeeRepository.delete(employee);
+            }
+        }
+    }
+    
     private void moveProcessedFile(File file){
         try {
             String path = customPath + File.separator + ".." + File.separator + "/processed/";
