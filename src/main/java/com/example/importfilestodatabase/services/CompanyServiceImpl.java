@@ -108,6 +108,10 @@ public class CompanyServiceImpl implements CompanyService {
     public void compareAndSaveData(Company newCompany, Employee newEmployee) throws IOException {
         for (Company existingCompany : getAllCompanies()) {
             if(isICOSame(existingCompany, newCompany)){
+                if(existingCompany.compareTo(newCompany)==0 && existingCompany.getEmployee().compareTo(newEmployee)==0){
+                    stats.put(Status.DUPLICATE, stats.get(Status.DUPLICATE) + 1);
+                    return;
+                }
                 Company company = this.companyRepository.findById(existingCompany.getId()).get();
                 company.setId(company.getId());
                 company.setAddress(newCompany.getAddress());
@@ -125,8 +129,8 @@ public class CompanyServiceImpl implements CompanyService {
                     return;
                 }
                 catch (DataIntegrityViolationException e) {
-                    LOG.info("A duplicate record was identified. ");
-                    stats.put(Status.DUPLICATE, stats.get(Status.DUPLICATE) + 1);
+                    LOG.info("Data integrity error encountered.");
+                    stats.put(Status.ERROR, stats.get(Status.ERROR) + 1);
                 }
                 catch(Exception e){
                     LOG.info("Error. It wasn't possible to save the record in the database.");
@@ -142,8 +146,8 @@ public class CompanyServiceImpl implements CompanyService {
             return;
         }
         catch (DataIntegrityViolationException e) {
-            LOG.info("A duplicate record was identified. ");
-            stats.put(Status.DUPLICATE, stats.get(Status.DUPLICATE) + 1);
+            LOG.info("Data integrity error encountered.");
+            stats.put(Status.ERROR, stats.get(Status.ERROR) + 1);
         }
         catch(Exception e){
             LOG.info("Error. It wasn't possible to save the record in the database.");
@@ -182,7 +186,7 @@ public class CompanyServiceImpl implements CompanyService {
             Path movedFile = Paths.get(path + file.getName());
             Path originalPath = file.toPath();
             Files.copy(originalPath, movedFile, StandardCopyOption.REPLACE_EXISTING);
-            //file.delete(); //Kept for testing purposes
+            file.delete();
             LOG.info("The file " + file.getName() + " was saved here.");
         }
         catch(Exception e){

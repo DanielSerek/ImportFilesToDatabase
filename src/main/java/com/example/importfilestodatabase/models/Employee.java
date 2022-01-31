@@ -1,6 +1,7 @@
 package com.example.importfilestodatabase.models;
 
 import javax.persistence.*;
+import java.util.Comparator;
 import java.util.Date;
 
 @Entity
@@ -77,5 +78,12 @@ public class Employee {
 
     public void setCompany(Company company) {
         this.company = company;
+    }
+
+    public int compareTo(Employee e) {
+        return Comparator.comparing(Employee::getFirstName)
+                .thenComparing(Employee::getSurName)
+                .thenComparing(Employee::getEmail)
+                .compare(this, e);
     }
 }

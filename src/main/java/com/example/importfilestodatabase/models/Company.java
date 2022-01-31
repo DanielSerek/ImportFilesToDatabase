@@ -1,11 +1,12 @@
 package com.example.importfilestodatabase.models;
 
 import javax.persistence.*;
+import java.util.Comparator;
 import java.util.Date;
 
 @Entity
 @Table(name="companies")
-public class Company {
+public class Company  {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -91,5 +92,12 @@ public class Company {
 
     public void setTimeStamp(Date timeStamp) {
         this.timeStamp = timeStamp;
+    }
+
+    public int compareTo(Company o) {
+        return Comparator.comparing(Company::getCompName)
+                .thenComparing(Company::getIco)
+                .thenComparing(Company::getAddress)
+                .compare(this, o);
     }
 }
